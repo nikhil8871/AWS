@@ -222,6 +222,16 @@ npm -v
 sudo npm install -g pm2
 ```
 
+> [!NOTE]
+> **What does `curl -fsSL ... | sudo bash -` do?**  
+> It registers the official NodeSource repository on Amazon Linux 2023 so `dnf install -y nodejs` installs Node.js version 20.  
+> - **`-f`** (Fail silently): Fails immediately on HTTP errors so error pages are not piped into bash.  
+> - **`-s`** (Silent): Hides progress meter to keep output clean.  
+> - **`-S`** (Show error): Displays error message if connection fails.  
+> - **`-L`** (Location): Follows URL redirects automatically.  
+> - **`|`** (Pipe): Passes the downloaded script directly into the next command without saving a temporary file to disk.  
+> - **`sudo bash -`**: Runs the **`bash`** shell interpreter with root (`sudo`) privileges. The trailing dash (**`-`**) tells bash to read and execute the script directly from standard input (the pipe).
+
 ### 3. Clone repository and install dependencies:
 ```bash
 cd /home/ec2-user
