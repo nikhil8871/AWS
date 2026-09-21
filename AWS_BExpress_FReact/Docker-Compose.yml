@@ -1,0 +1,46 @@
+version: "3"
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - nikhil:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "1234"
+      MYSQL_DATABASE: webappdb
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p1234" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  backend:
+    build: ./app-tier-back
+    container_name: backend
+    restart: always
+    ports:
+      - "4000:4000"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql-db
+      DB_USER: root
+      DB_PWD: 1234
+      DB_NAME: webappdb
+      DB_PORT: 3306
+
+  frontend:
+    build: ./web-tier-Front
+    container_name: frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  nikhil:
