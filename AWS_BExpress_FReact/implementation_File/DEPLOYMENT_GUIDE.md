@@ -229,10 +229,8 @@ sudo npm install -g pm2
 cd /home/ec2-user
 
 # Clone your repository into the 'app' folder:
-git clone https://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@github.com/nikhil8871/AWS.git app
-
-# Choice B: If using your Private repository (with GitHub Personal Access Token):
-# git clone https://<YOUR_GITHUB_TOKEN>@github.com/nikhil8871/AWS.git app
+# (Replace <YOUR_GITHUB_TOKEN> with your personal access token if repo is private)
+git clone https://<YOUR_GITHUB_TOKEN>@github.com/nikhil8871/AWS.git app
 
 cd /home/ec2-user/app/app-tier-back
 npm install
@@ -334,11 +332,9 @@ sudo dnf install -y nodejs
 ```bash
 cd /home/ec2-user
 
-# Choice A: If using a Public repository:(Using Token)
-git clone https://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@github.com/nikhil8871/AWS.git
-
-# Choice B: If using your Private repository (with GitHub Personal Access Token):
-# git clone https://<YOUR_GITHUB_TOKEN>@github.com/nikhil8871/AWS.git app
+# Clone your repository into the 'app' folder:
+# (Replace <YOUR_GITHUB_TOKEN> with your personal access token if repo is private)
+git clone https://<YOUR_GITHUB_TOKEN>@github.com/nikhil8871/AWS.git app
 
 cd /home/ec2-user/app/web-tier-Front
 npm install
