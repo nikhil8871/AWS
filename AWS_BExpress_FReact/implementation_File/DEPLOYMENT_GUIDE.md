@@ -474,3 +474,15 @@ sudo tail -n 50 /var/log/nginx/error.log
 # Test reverse proxy connection to backend
 curl -v http://localhost/api/health
 ```
+
+---
+
+## 9. Advanced Architecture: Dual Load Balancers & Route 53
+For step-by-step instructions on configuring:
+- **External Application Load Balancer** (Internet-Facing)
+- **Internal Application Load Balancer** (Private App Tier)
+- **AWS Route 53 Custom DNS** (`nkhlsjbpnit.shop`)
+
+See the companion guide:  
+👉 **[`LOAD_BALANCER_AND_ROUTE53_GUIDE.md`](./LOAD_BALANCER_AND_ROUTE53_GUIDE.md)**
+
