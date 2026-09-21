@@ -125,13 +125,9 @@ Inside your **Backend EC2** terminal:
 sudo dnf install -y mariadb105
 ```
 
-> [!NOTE]
-> **Why `mariadb105` instead of `mysql`?**  
-> Amazon Linux 2023 does not include the Oracle `mysql` package in its default repositories. MariaDB is an exact open-source drop-in replacement that uses the same MySQL wire protocol and port (`3306`). Installing `mariadb105` is the official AWS method to connect to Aurora MySQL without configuring external third-party repositories. Your database remains 100% genuine AWS Aurora MySQL.
-
 ### 2. Connect to Aurora MySQL:
 ```bash
-mariadb -h <YOUR_AURORA_CLUSTER_ENDPOINT> -u admin -p
+mariadb -h mysql-db.ch8sokem81lg.ap-south-2.rds.amazonaws.com -u admin -p
 ```
 *(Enter your Aurora password `123456789` when prompted)*
 
@@ -195,6 +191,13 @@ Before exiting MySQL, verify everything is created:
 
 ---
 
+#### 💡 Step 3 Notes & Explanations:
+> [!NOTE]
+> **Why `mariadb105` instead of `mysql`?**  
+> Amazon Linux 2023 does not include the Oracle `mysql` package in its default repositories. MariaDB is an exact open-source drop-in replacement that uses the same MySQL wire protocol and port (`3306`). Installing `mariadb105` is the official AWS method to connect to Aurora MySQL without configuring external third-party repositories. Your database remains 100% genuine AWS Aurora MySQL.
+
+---
+
 ## 5. Step 4: On Backend EC2 ➔ Configure Backend Application (Command-by-Command)
 
 Still inside your **Backend EC2** terminal, run these commands one-by-one:
@@ -204,7 +207,6 @@ Still inside your **Backend EC2** terminal, run these commands one-by-one:
 sudo dnf update -y
 sudo dnf install -y git
 ```
-*(Note: Git is required on EC2 to clone and download your application source code from GitHub).*
 
 ### 2. Install Node.js 20 & PM2:
 ```bash
@@ -222,20 +224,15 @@ npm -v
 sudo npm install -g pm2
 ```
 
-> [!NOTE]
-> **What does `curl -fsSL ... | sudo bash -` do?**  
-> It registers the official NodeSource repository on Amazon Linux 2023 so `dnf install -y nodejs` installs Node.js version 20.  
-> - **`-f`** (Fail silently): Fails immediately on HTTP errors so error pages are not piped into bash.  
-> - **`-s`** (Silent): Hides progress meter to keep output clean.  
-> - **`-S`** (Show error): Displays error message if connection fails.  
-> - **`-L`** (Location): Follows URL redirects automatically.  
-> - **`|`** (Pipe): Passes the downloaded script directly into the next command without saving a temporary file to disk.  
-> - **`sudo bash -`**: Runs the **`bash`** shell interpreter with root (`sudo`) privileges. The trailing dash (**`-`**) tells bash to read and execute the script directly from standard input (the pipe).
-
 ### 3. Clone repository and install dependencies:
 ```bash
 cd /home/ec2-user
-git clone https://github.com/Kiran191998/Terraform_Project_20_Aug_BExpress_FReact.git app
+
+# Clone your repository into the 'app' folder:
+git clone https://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@github.com/nikhil8871/AWS.git app
+
+# Choice B: If using your Private repository (with GitHub Personal Access Token):
+# git clone https://<YOUR_GITHUB_TOKEN>@github.com/nikhil8871/AWS.git app
 
 cd /home/ec2-user/app/app-tier-back
 npm install
@@ -245,12 +242,11 @@ sudo chown -R ec2-user:ec2-user /home/ec2-user/app
 ```
 
 ### 4. Start the Express Backend with PM2:
-Replace `<YOUR_AURORA_CLUSTER_ENDPOINT>` and `<YOUR_AURORA_PASSWORD>` with your actual values:
 ```bash
 sudo -u ec2-user \
-    DB_HOST="<YOUR_AURORA_CLUSTER_ENDPOINT>" \
+    DB_HOST="mysql-db.ch8sokem81lg.ap-south-2.rds.amazonaws.com" \
     DB_USER="admin" \
-    DB_PWD="<YOUR_AURORA_PASSWORD>" \
+    DB_PWD="123456789" \
     DB_NAME="webappdb" \
     PORT=4000 \
     pm2 start index.js --name "backend"
@@ -273,16 +269,50 @@ curl http://localhost:4000/health
 # Expected Output: "This is the health check"
 
 # 3. Test transaction query directly to Aurora MySQL
-curl http://localhost:4000/transaction
+   curl http://localhost:4000/transaction
 # Expected Output: JSON array containing groceries, utilities, restaurant!
 
-# 4. Copy the Backend Private IP address (REQUIRED FOR FRONTEND STEP)
-hostname -I | awk '{print $1}'
-# (Example: 10.0.2.145)
+# 4. Before you type exit, just run this quick command so PM2 saves your running process:
+sudo -u ec2-user pm2 save
+
 
 # 5. Exit back to the Frontend EC2 terminal:
 exit
 ```
+
+---
+
+#### 💡 Step 4 Notes & Explanations:
+> [!NOTE]
+> **1. Why Git is required:**  
+> A fresh EC2 instance starts completely empty. Git is needed on EC2 so you can clone and download your application source code directly from GitHub with one command.
+>
+> **2. What does `curl -fsSL ... | sudo bash -` do?**  
+> It registers the official NodeSource repository on Amazon Linux 2023 so `dnf install -y nodejs` installs Node.js version 20.  
+> - **`-f`** (Fail silently): Fails immediately on HTTP errors so error pages are not piped into bash.  
+> - **`-s`** (Silent): Hides progress meter to keep output clean.  
+> - **`-S`** (Show error): Displays error message if connection fails.  
+> - **`-L`** (Location): Follows URL redirects automatically.  
+> - **`|`** (Pipe): Passes the downloaded script directly into the next command without saving a temporary file to disk.  
+> - **`sudo bash -`**: Runs the **`bash`** shell interpreter with root (`sudo`) privileges. The trailing dash (**`-`**) tells bash to read and execute the script directly from standard input (the pipe).
+>
+> **3. Why PM2 is used and what happens when you type `exit`:**  
+> - If you run regular `node index.js`, the app is tied to your terminal window. The moment you type `exit` or disconnect SSH, Linux kills the process and your backend goes offline.  
+> - **PM2 runs as a detached background daemon:** When you type `exit`, PM2 stays 100% active in the background and keeps your backend running on port `4000`.  
+> - If the app crashes, PM2 restarts it automatically within milliseconds.  
+> - Running `pm2 save` and `pm2 startup` configures Linux `systemd` to automatically relaunch your backend if AWS restarts the server.
+>
+> **4. How to generate a GitHub Token & clone private repositories:**  
+> - **To generate a token on GitHub:**  
+>   1. In GitHub, click your **Profile picture** (top right) ➔ **Settings**.  
+>   2. Scroll down the left sidebar to **Developer Settings** ➔ **Personal access tokens** ➔ **Tokens (classic)**.  
+>   3. Click **Generate new token (classic)**.  
+>   4. Give it a Note (e.g. `ec2-deployment`) and check the **`repo`** scope checkbox.  
+>   5. Click **Generate token** at the bottom and copy the generated token (`ghp_...`).  
+> - **To clone on EC2 using the token:**  
+>   `git clone https://<YOUR_GITHUB_TOKEN>@github.com/<USERNAME>/<REPO>.git app`  
+>   *(Example: `git clone https://ghp_xxxx@github.com/nikhil8871/AWS.git app`)*.  
+>   *(Notice: remove `< >` angle brackets, and ensure there is an `@` directly before `github.com`)*.
 
 ---
 
@@ -303,7 +333,12 @@ sudo dnf install -y nodejs
 ### 2. Clone repository and build React App:
 ```bash
 cd /home/ec2-user
-git clone https://github.com/Kiran191998/Terraform_Project_20_Aug_BExpress_FReact.git app
+
+# Choice A: If using a Public repository:(Using Token)
+git clone https://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@github.com/nikhil8871/AWS.git
+
+# Choice B: If using your Private repository (with GitHub Personal Access Token):
+# git clone https://<YOUR_GITHUB_TOKEN>@github.com/nikhil8871/AWS.git app
 
 cd /home/ec2-user/app/web-tier-Front
 npm install
@@ -320,10 +355,10 @@ sudo chmod -R 755 /var/www/html
 ```
 
 ### 4. Configure Nginx with Reverse Proxy to Backend EC2:
-Run this command, replacing `<BACKEND_PRIVATE_IP>` with the private IP you copied from Step 4 (e.g. `10.0.2.145:4000`):
+Run this command to write the configuration (pre-filled with your Backend IP `10.0.3.138`):
 
 ```bash
-sudo bash -c "cat << 'EOF' > /etc/nginx/nginx.conf
+sudo tee /etc/nginx/nginx.conf > /dev/null << 'EOF'
 user nginx;
 worker_processes auto;
 error_log /var/log/nginx/error.log;
@@ -350,27 +385,27 @@ http {
         # Web Tier Health Check
         location /health {
             default_type text/html;
-            return 200 \"<!DOCTYPE html><p>Web Tier Health Check OK</p>\\n\";
+            return 200 "<!DOCTYPE html><p>Web Tier Health Check OK</p>\n";
         }
 
         # React Frontend Single Page App routing
         location / {
             root    /var/www/html;
             index   index.html index.htm;
-            try_files \$uri /index.html;
+            try_files $uri /index.html;
         }
 
         # Reverse Proxy to Backend Express API
         location /api/ {
-            proxy_pass http://<BACKEND_PRIVATE_IP>:4000/;
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
+            proxy_pass http://10.0.3.138:4000/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
 }
-EOF"
+EOF
 ```
 
 ### 5. Start and enable Nginx:
@@ -427,7 +462,7 @@ curl http://localhost:4000/health
 curl http://localhost:4000/transaction
 
 # Test connection to Aurora MySQL directly
-mariadb -h <YOUR_AURORA_ENDPOINT> -u admin -p -e "SHOW DATABASES;"
+mariadb -h mysql-db.ch8sokem81lg.ap-south-2.rds.amazonaws.com -u admin -p -e "SHOW DATABASES;"
 ```
 
 ### On Frontend EC2:
